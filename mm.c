@@ -39,7 +39,23 @@ void multiply_base()
 	// Your code here
 	//
 	// Implement your baseline matrix multiply here.
-	
+	int i, j, k; 
+	for(i = 0; i < SIZEX; i++){
+		for(j=0 ; j < SIZEY; j++){
+			for(k=0; k < SIZEX; k++){
+				//multiplication on each index 
+				//whereas [0*22000+0= 0    0*22000+1=1         ]
+				//        [1*22000+0=22000 1*22000+1= 22001    ]
+				//something along that line
+				huge_matrixC[i*SIZEY+j] +=(
+					huge_matrixA[i*SIZEY+k] * 
+					huge_matrixB[k*SIZEY+j]
+					);
+
+			}
+		}
+	}
+
 }
 
 void compare_results()
@@ -50,7 +66,7 @@ void compare_results()
 	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
 	{
 		fscanf(fout, "%ld", &temp1);
-		fscanf(fout, "%ld", &temp2);
+		fscanf(ftest, "%ld", &temp2);
 		if(temp1!=temp2)
 		{
 			printf("Wrong solution!");
@@ -67,6 +83,13 @@ void write_results()
 	//
 	// Basically, make sure the result is written on fout
 	// Each line represent value in the X-dimension of your matrix
+	int i, j;
+	for(i = 0; i < SIZEX; i++){
+		for(j=0 ; j < SIZEY; j++){
+			fprintf(fout, "%ld ", huge_matrixC[i*SIZEY+j]);
+		}
+		fprintf(fout, "\n");
+	}
 }
 
 void load_matrix()
@@ -108,24 +131,24 @@ int main()
 	t = clock();
 	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
-	fclose(fin1);
-	fclose(fin2);
-	fclose(fout);
-	free_all();
+	// fclose(fin1);
+	// fclose(fin2);
+	// fclose(fout);
+	// free_all();
 
-	flush_all_caches();
+	// flush_all_caches();
 
-	s = clock();
-	load_matrix();
-	t = clock();
-	total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the load = %f seconds\n", total_in_your);
+	// s = clock();
+	// load_matrix();
+	// t = clock();
+	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("Total time taken during the load = %f seconds\n", total_in_your);
 
-	s = clock();
-	multiply();
-	t = clock();
-	total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
+	// s = clock();
+	// multiply();
+	// t = clock();
+	// total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
 	write_results();
 	fclose(fin1);
 	fclose(fin2);
