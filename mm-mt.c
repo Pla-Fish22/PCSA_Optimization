@@ -7,6 +7,7 @@
 
 pthread_mutex_t mutexQueue;
 pthread_t * th;
+pthread_t th_load[3];
 
 int taskCount = 0;
 int numThreads = 10;
@@ -80,7 +81,29 @@ void *startThread(void *args)
     
 }
 
+void thread_procedure_load_a(){
+	int i; 
+	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
+	{
+		fscanf(fin1,"%ld", (huge_matrixA+i)); 			
+	}
+}
 
+void thread_procedure_load_b(){
+	int i;
+	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
+	{	
+		fscanf(fin2,"%ld", (huge_matrixB+i)); 			
+	}
+}
+
+void thread_procedure_load_c(){
+	int i;
+	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
+	{		
+		huge_matrixC[i] = 0;		
+	}
+}
 
 
 
@@ -228,13 +251,15 @@ void write_results()
 
 void load_matrix()
 {
-	// Your code here
-	long i;
-	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
-	{
-		fscanf(fin1,"%ld", (huge_matrixA+i)); 		
-		fscanf(fin2,"%ld", (huge_matrixB+i)); 		
-		huge_matrixC[i] = 0;		
+	pthread_create(&th_load[0], NULL, thread_procedure_load_a, NULL);
+	pthread_create(&th_load[1], NULL, thread_procedure_load_b, NULL);
+	pthread_create(&th_load[2], NULL, thread_procedure_load_c, NULL);
+
+	int indivThread;
+	for(indivThread=0; indivThread< 3; indivThread++){
+		if(pthread_join(th_load[indivThread], NULL) != 0){
+			perror("Failed to join thread");
+		}
 	}
 }
 
@@ -300,18 +325,23 @@ int main()
 	// t = clock();
 	// total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	// printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
-	// fclose(fin1);
-	// fclose(fin2);
-	// fclose(fout);
+	fclose(fin1);
+	fclose(fin2);
+	fclose(fout);
 	// free_all();
 
 	// flush_all_caches();
 
-	// s = clock();
-	// load_matrix();
-	// t = clock();
-	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	// printf("Total time taken during the load = %f seconds\n", total_in_your);
+
+	fin1 = fopen("./input1.in","r");
+	fin2 = fopen("./input2.in","r");
+	fout = fopen("./out.in","w");
+
+	s = clock();
+	load_matrix();
+	t = clock();
+	total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	printf("Total time taken during the load = %f seconds\n", total_in_your);
 
 	s = clock();
 	multiply();
@@ -322,23 +352,22 @@ int main()
 	fclose(fin1);
 	fclose(fin2);
 	fclose(fout);
-	free_all();
 	compare_results();
 
-	// struct timespec t1,t2;
-    // double elapsedTime;
-    // clock_gettime(CLOCK_MONOTONIC, &t1);
-    // thread_procedure_multiply();
-    // clock_gettime(CLOCK_MONOTONIC, &t2);
-    // elapsedTime = (t2.tv_sec - t1.tv_sec);
-    // elapsedTime +=(t2.tv_nsec - t1.tv_nsec) / 1000000000.0;
-    // printf("[Thread] Total time taken during the multiply = %f seconds\n", elapsedTime);
-	// write_results();
-	// fclose(fin1);
-	// fclose(fin2);
-	// fclose(fout);
-	// free_all();
-	// compare_results();
+	struct timespec t1,t2;
+    double elapsedTime;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    thread_procedure_multiply();
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    elapsedTime = (t2.tv_sec - t1.tv_sec);
+    elapsedTime +=(t2.tv_nsec - t1.tv_nsec) / 1000000000.0;
+    printf("[Thread] Total time taken during the multiply = %f seconds\n", elapsedTime);
+	write_results();
+	fclose(fin1);
+	fclose(fin2);
+	fclose(fout);
+	free_all();
+	compare_results();
 
 	return 0;
 }

@@ -4,10 +4,10 @@
 CC = gcc
 CFLAGS = -O -Wall -m64 -pthread 	
 
-all: mm-mt
+all: mm
 
-mm: mm-mt.c mm-mt.h 
-	$(CC) $(CFLAGS) -o mm-mt mm-mt.c 
+mm: mm.c mm.h 
+	$(CC) $(CFLAGS) -o mm mm.c 
 
 clean:
-	rm -f *.o mm-mt
+	rm -f *.o mm
