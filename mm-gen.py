@@ -4,7 +4,7 @@ import numpy as np
 import os,sys
 import random
 
-print(sys)
+
 size = sys.argv[1]
 
 f1 = open("input1.in","w")
