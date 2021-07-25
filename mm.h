@@ -1,5 +1,6 @@
 #define SIZEX 2000
 #define SIZEY 2000
+#define BLOCKSIZE 50
 
 long * huge_matrixA;
 long * huge_matrixB;

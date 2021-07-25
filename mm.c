@@ -51,7 +51,6 @@ void multiply_base()
 					huge_matrixA[i*SIZEY+k] * 
 					huge_matrixB[k*SIZEY+j]
 					);
-
 			}
 		}
 	}
@@ -69,10 +68,11 @@ void compare_results()
 		fscanf(ftest, "%ld", &temp2);
 		if(temp1!=temp2)
 		{
-			printf("Wrong solution!");
+			printf("Wrong solution!\n");
 			exit(1);
 		}
 	}
+	printf("Right solution\n");
 	fclose(fout);
 	fclose(ftest);
 }
@@ -102,6 +102,35 @@ void load_matrix()
 void multiply()
 {
 	// Your code here
+    //outer loop  withblocks 
+	int i,j; //these are for outer loop
+	int m,n; // inner loop
+	int k;
+
+	int sum_tl, sum_tr, sum_bl, sum_br;
+
+	for(i = 0; i < SIZEX; i+=BLOCKSIZE){ //x axis of block iteration
+		for(j = 0; j < SIZEY; j+=BLOCKSIZE){// y axis of block iteration
+			for(m = i; m < i+BLOCKSIZE; m+=2){ 
+				for(n = j; n < j+BLOCKSIZE; n+=2){
+					sum_tl = 0;
+					sum_tr = 0;
+					sum_bl = 0;
+					sum_br = 0;
+					for(k=0; k < SIZEY; k++){
+						sum_tl += huge_matrixA[m*SIZEY+k] * huge_matrixB[k*SIZEY+n];
+						sum_tr += huge_matrixA[m*SIZEY+k] * huge_matrixB[k*SIZEY+n+1];
+						sum_bl += huge_matrixA[(m+1)*SIZEY+k] * huge_matrixB[k*SIZEY+n];
+						sum_br += huge_matrixA[(m+1)*SIZEY+k] * huge_matrixB[k*SIZEY+(n+1)];
+					}
+					huge_matrixC[m*SIZEY+n] = sum_tl;
+					huge_matrixC[m*SIZEY+n+1] = sum_tr;
+					huge_matrixC[(m+1)*SIZEY+n] = sum_bl;
+					huge_matrixC[(m+1)*SIZEY+(n+1)] = sum_br;
+				}
+			}
+		}
+	}
 }
 
 int main()
@@ -126,11 +155,11 @@ int main()
 	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
 
-	s = clock();
-	multiply_base();
-	t = clock();
-	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
+	// s = clock();
+	// multiply_base();
+	// t = clock();
+	// total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
 	// fclose(fin1);
 	// fclose(fin2);
 	// fclose(fout);
@@ -144,11 +173,11 @@ int main()
 	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	// printf("Total time taken during the load = %f seconds\n", total_in_your);
 
-	// s = clock();
-	// multiply();
-	// t = clock();
-	// total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	// printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
+	s = clock();
+	multiply();
+	t = clock();
+	total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
 	write_results();
 	fclose(fin1);
 	fclose(fin2);
