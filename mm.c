@@ -9,6 +9,30 @@
 void flush_all_caches()
 {
 	// Your code goes here
+	long i;
+	for(i=0;i<((long)SIZEX*(long)SIZEY); i++)
+	{
+		asm volatile("clflush (%0)\n\t"
+					:
+					: "r"(&huge_matrixA[i])
+					: "memory");
+
+		asm volatile("clflush (%0)\n\t"
+					:
+					: "r"(&huge_matrixB[i])
+					: "memory");
+
+		asm volatile("clflush (%0)\n\t"
+					:
+					: "r"(&huge_matrixC[i])
+					: "memory");
+	}
+
+	asm volatile("sfence\n\t"
+				:
+				:
+				: "memory"
+	);
 }
 
 void load_matrix_base()
@@ -95,6 +119,13 @@ void write_results()
 void load_matrix()
 {
 	// Your code here
+	long i;
+	for(i=0;i<((long)SIZEX*(long)SIZEY);i++)
+	{
+		fscanf(fin1,"%ld", (huge_matrixA+i)); 		
+		fscanf(fin2,"%ld", (huge_matrixB+i)); 		
+		huge_matrixC[i] = 0;		
+	}
 }
 
 

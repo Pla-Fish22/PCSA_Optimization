@@ -1,20 +1,20 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include<unistd.h>
 #include<time.h>
+#include<unistd.h>
 #include<pthread.h>
 
-pthread_mutex_t mutexQueue;
-pthread_cond_t condQueue; 
-pthread_t th[10];
 
-int taskCount = 0; 
+pthread_mutex_t mutexQueue;
+pthread_t * th;
+
+int taskCount = 0;
+int numThreads = 10;
 
 #include "mm-mt.h"
 
 
 typedef struct Task{
-    int taskId;
     int i;
     int j;
 }Task;
@@ -22,8 +22,8 @@ typedef struct Task{
 Task taskQueue[sizeof(Task)*((SIZEX*SIZEY)/BLOCKSIZE)];
 
 
+///
 
-/////////////////////////////////
 
 void multiply_thread(Task task){
 
@@ -54,53 +54,65 @@ void multiply_thread(Task task){
 			}
 }
 
-void submitTask(){
-	struct Task task;
-	pthread_mutex_lock(&mutexQueue);
-	int i,j; 
-    for(i = 0; i < SIZEX; i+=BLOCKSIZE){
-        for(j = 0; j < SIZEY; j+=BLOCKSIZE){
-           taskQueue[taskCount].i = i;
-		   taskQueue[taskCount].j = j;   
-		   taskCount++;         
-        }
-    }
-	pthread_mutex_unlock(&mutexQueue);
-	pthread_cond_signal(&condQueue);
-}
 
-
-void executeTask(Task task){
-    multiply_thread(task);
-}
-
-
-
-void *startThread(void *args){
-    while(1){
+void *startThread(void *args)
+{
+	sleep(1);
+    while (1)
+    {
         Task task;
-
         pthread_mutex_lock(&mutexQueue);
-        while (taskCount == 0)
-        {
-            pthread_cond_wait(&condQueue, &mutexQueue);
-        }
-
-        task = taskQueue[0]; //cur task
-        int i;
-        for (i = 0; i < taskCount - 1; i++)
+		task = taskQueue[0];
+		int i;
+		for (i = 0; i < taskCount - 1; i++)
         {
             taskQueue[i] = taskQueue[i + 1];
         }
         taskCount--;
         pthread_mutex_unlock(&mutexQueue);
-        executeTask(task);
-    }
+		multiply_thread(task);
+		if(taskCount<=0){
+			return NULL;
+		}
+
+	}
 	return NULL;
+    
 }
 
 
-////////////////////////////////
+
+
+
+void thread_procedure_multiply(){
+	th = malloc(sizeof(pthread_t) * numThreads);
+	int indivThread;
+	for(indivThread=0;indivThread<numThreads;indivThread++){
+		if(pthread_create(&th[indivThread], NULL, &startThread, NULL)!= 0){
+			perror("Failed to spawn thread");
+		}
+	}	
+	int i,j; 
+	pthread_mutex_lock(&mutexQueue);
+    for(i = 0; i < SIZEX; i+=BLOCKSIZE){
+        for(j = 0; j < SIZEY; j+=BLOCKSIZE){
+			taskQueue[taskCount].i = i;
+			taskQueue[taskCount].j = j;
+			taskCount++;
+			pthread_mutex_unlock(&mutexQueue);
+        }
+    }
+	for(indivThread=0; indivThread< numThreads; indivThread++){
+		if(pthread_join(th[indivThread], NULL) != 0){
+			perror("Failed to join thread");
+		}
+	}
+	pthread_mutex_destroy(&mutexQueue);
+	
+
+
+}
+///
 
 // Task 1: Flush the cache so that we can do our measurement :)
 void flush_all_caches()
@@ -190,15 +202,13 @@ void compare_results()
 		if(temp1!=temp2)
 		{
 			printf("Wrong solution!\n");
-            printf("%i : %i\n", temp1, temp2);
+			printf("%ld:%ld", fout, ftest);
 			exit(1);
 		}
 	}
 	printf("Right solution\n");
-    fclose(fout);
-    fclose(ftest);
-
-
+	fclose(fout);
+	fclose(ftest);
 }
 
 void write_results()
@@ -227,7 +237,6 @@ void load_matrix()
 		huge_matrixC[i] = 0;		
 	}
 }
-
 
 
 
@@ -267,6 +276,7 @@ void multiply()
 
 int main()
 {
+	
 	clock_t s,t;
 	double total_in_base = 0.0;
 	double total_in_your = 0.0;
@@ -276,6 +286,8 @@ int main()
 	fin2 = fopen("./input2.in","r");
 	fout = fopen("./out.in","w");
 	ftest = fopen("./reference.in","r");
+	
+
 
 	s = clock();
 	load_matrix_base();
@@ -283,22 +295,17 @@ int main()
 	total_in_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
 
-
 	// s = clock();
 	// multiply_base();
 	// t = clock();
 	// total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	// printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
-    // write_results();
-    // fclose(fin1);
+	// fclose(fin1);
 	// fclose(fin2);
 	// fclose(fout);
-    // compare_results();
-	
-
+	// free_all();
 
 	// flush_all_caches();
-
 
 	// s = clock();
 	// load_matrix();
@@ -306,57 +313,32 @@ int main()
 	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
 	// printf("Total time taken during the load = %f seconds\n", total_in_your);
 
-    // s = clock();
-	// multiply();
-	// t = clock();
-	// total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	// printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
-    // write_results();
-    // fclose(fin1);
-	// fclose(fin2);
-	// fclose(fout);
-    // compare_results();
-
-
-	// flush_all_caches();
-
-
-	// s = clock();
-	// load_matrix();
-	// t = clock();
-	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	// printf("Total time taken during the load = %f seconds\n", total_in_your);
-
-    pthread_mutex_init(&mutexQueue, NULL);
-	pthread_cond_init(&condQueue, NULL);
-    int individual_thread;
-    for (individual_thread = 0; individual_thread < 10; individual_thread++){
-        if(pthread_create(&th[individual_thread], NULL, &startThread, NULL) != 0)
-        {
-            perror("Failed to create Thread");
-        }
-    }
-
-
-    struct timespec t1,t2;
-    double elapsedTime;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-    submitTask();
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    elapsedTime = (t2.tv_sec - t1.tv_sec);
-    elapsedTime +=(t2.tv_nsec - t1.tv_nsec) / 1000000000.0;
-    printf("[Thread] Total time taken during the multiply = %f seconds\n", elapsedTime);
-    write_results();
-    fclose(fin1);
+	s = clock();
+	multiply();
+	t = clock();
+	total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
+	write_results();
+	fclose(fin1);
 	fclose(fin2);
 	fclose(fout);
-    compare_results();
-
-
-
 	free_all();
+	compare_results();
 
-
+	// struct timespec t1,t2;
+    // double elapsedTime;
+    // clock_gettime(CLOCK_MONOTONIC, &t1);
+    // thread_procedure_multiply();
+    // clock_gettime(CLOCK_MONOTONIC, &t2);
+    // elapsedTime = (t2.tv_sec - t1.tv_sec);
+    // elapsedTime +=(t2.tv_nsec - t1.tv_nsec) / 1000000000.0;
+    // printf("[Thread] Total time taken during the multiply = %f seconds\n", elapsedTime);
+	// write_results();
+	// fclose(fin1);
+	// fclose(fin2);
+	// fclose(fout);
+	// free_all();
+	// compare_results();
 
 	return 0;
 }
