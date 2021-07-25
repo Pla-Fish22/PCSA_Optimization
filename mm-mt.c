@@ -6,7 +6,7 @@
 
 pthread_mutex_t mutexQueue;
 pthread_cond_t condQueue; 
-pthread_t * th;
+pthread_t th[10];
 
 int taskCount = 0; 
 
@@ -19,7 +19,7 @@ typedef struct Task{
     int j;
 }Task;
 
-Task taskQueue[100];
+Task taskQueue[sizeof(Task)*((SIZEX*SIZEY)/BLOCKSIZE)];
 
 
 
@@ -54,37 +54,49 @@ void multiply_thread(Task task){
 			}
 }
 
-
-void executeTask(Task task){
-    int i,j; 
+void submitTask(){
+	struct Task task;
+	pthread_mutex_lock(&mutexQueue);
+	int i,j; 
     for(i = 0; i < SIZEX; i+=BLOCKSIZE){
         for(j = 0; j < SIZEY; j+=BLOCKSIZE){
-            task.i = i;
-            task.j = j;
-            multiply_thread(task);
+           taskQueue[taskCount].i = i;
+		   taskQueue[taskCount].j = j;   
+		   taskCount++;         
         }
     }
+	pthread_mutex_unlock(&mutexQueue);
+	pthread_cond_signal(&condQueue);
+}
+
+
+void executeTask(Task task){
+    multiply_thread(task);
 }
 
 
 
 void *startThread(void *args){
-    pthread_detach(pthread_self());
-    sleep(1);
     while(1){
-        Task task; 
-        pthread_mutex_lock(&mutexQueue);
+        Task task;
 
-        task = taskQueue[0];
+        pthread_mutex_lock(&mutexQueue);
+        while (taskCount == 0)
+        {
+            pthread_cond_wait(&condQueue, &mutexQueue);
+        }
+
+        task = taskQueue[0]; //cur task
         int i;
-        for(i = 0; i < taskCount - 1; i++){
+        for (i = 0; i < taskCount - 1; i++)
+        {
             taskQueue[i] = taskQueue[i + 1];
         }
         taskCount--;
         pthread_mutex_unlock(&mutexQueue);
         executeTask(task);
     }
-    pthread_exit(NULL);
+	return NULL;
 }
 
 
@@ -272,11 +284,11 @@ int main()
 	printf("[Baseline] Total time taken during the load = %f seconds\n", total_in_base);
 
 
-	s = clock();
-	multiply_base();
-	t = clock();
-	total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
+	// s = clock();
+	// multiply_base();
+	// t = clock();
+	// total_mul_base += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("[Baseline] Total time taken during the multiply = %f seconds\n", total_mul_base);
     // write_results();
     // fclose(fin1);
 	// fclose(fin2);
@@ -285,20 +297,20 @@ int main()
 	
 
 
-	flush_all_caches();
+	// flush_all_caches();
 
 
-	s = clock();
-	load_matrix();
-	t = clock();
-	total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the load = %f seconds\n", total_in_your);
+	// s = clock();
+	// load_matrix();
+	// t = clock();
+	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("Total time taken during the load = %f seconds\n", total_in_your);
 
-    s = clock();
-	multiply();
-	t = clock();
-	total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
+    // s = clock();
+	// multiply();
+	// t = clock();
+	// total_mul_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("Total time taken during the multiply = %f seconds\n", total_mul_your);
     // write_results();
     // fclose(fin1);
 	// fclose(fin2);
@@ -306,31 +318,30 @@ int main()
     // compare_results();
 
 
-	flush_all_caches();
+	// flush_all_caches();
 
 
-	s = clock();
-	load_matrix();
-	t = clock();
-	total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
-	printf("Total time taken during the load = %f seconds\n", total_in_your);
+	// s = clock();
+	// load_matrix();
+	// t = clock();
+	// total_in_your += ((double)t-(double)s) / CLOCKS_PER_SEC;
+	// printf("Total time taken during the load = %f seconds\n", total_in_your);
 
     pthread_mutex_init(&mutexQueue, NULL);
 	pthread_cond_init(&condQueue, NULL);
     int individual_thread;
-    th = malloc(sizeof(pthread_t) * 10);
     for (individual_thread = 0; individual_thread < 10; individual_thread++){
         if(pthread_create(&th[individual_thread], NULL, &startThread, NULL) != 0)
         {
             perror("Failed to create Thread");
         }
     }
-    struct Task task;
+
 
     struct timespec t1,t2;
     double elapsedTime;
     clock_gettime(CLOCK_MONOTONIC, &t1);
-    executeTask(task);
+    submitTask();
     clock_gettime(CLOCK_MONOTONIC, &t2);
     elapsedTime = (t2.tv_sec - t1.tv_sec);
     elapsedTime +=(t2.tv_nsec - t1.tv_nsec) / 1000000000.0;
@@ -340,7 +351,6 @@ int main()
 	fclose(fin2);
 	fclose(fout);
     compare_results();
-
 
 
 
